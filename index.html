@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Meal Log</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="theme-color" content="#C9922B">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,500&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  :root {
+    --paper: #F7F2E7;
+    --paper-dim: #EFE7D6;
+    --ink: #262B1F;
+    --ink-soft: #5B6350;
+    --moss: #4B5D3A;
+    --wine: #6B3F45;
+    --mustard: #C9922B;
+    --line: #D9CDAE;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Inter', -apple-system, sans-serif;
+    background-image: radial-gradient(circle at 1px 1px, rgba(38,43,31,0.06) 1px, transparent 0);
+    background-size: 14px 14px;
+    min-height: 100vh;
+  }
+  .wrap {
+    max-width: 560px;
+    margin: 0 auto;
+    padding: 28px 18px 60px;
+  }
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 22px;
+    gap: 12px;
+  }
+  .nav-btn {
+    background: transparent;
+    border: 1.5px solid var(--ink);
+    color: var(--ink);
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 16px;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+  .nav-btn:hover { background: var(--ink); color: var(--paper); }
+  .date-block { text-align: center; }
+  .eyebrow {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    color: var(--ink-soft);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 16px;
+  }
+  .today-pill {
+    background: var(--mustard);
+    color: var(--paper);
+    font-size: 9px;
+    padding: 2px 7px;
+    border-radius: 20px;
+    letter-spacing: 0.1em;
+  }
+  .big-date {
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: 34px;
+    line-height: 1.05;
+    margin: 2px 0 0;
+  }
+  .big-date .mon-year {
+    font-size: 16px;
+    font-weight: 500;
+    font-style: italic;
+    color: var(--ink-soft);
+    margin-left: 6px;
+  }
+  .jump-row { display: flex; justify-content: center; margin-bottom: 26px; }
+  .jump-input {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    border: 1px solid var(--line);
+    background: var(--paper-dim);
+    color: var(--ink);
+    padding: 6px 10px;
+    border-radius: 6px;
+  }
+  .tickets {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+  }
+  @media (max-width: 520px) {
+    .tickets { grid-template-columns: 1fr; }
+  }
+  .ticket {
+    background: var(--paper);
+    border: 1.5px solid var(--ink);
+    border-radius: 4px;
+    box-shadow: 4px 4px 0 rgba(38,43,31,0.08);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .ticket-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 14px 8px;
+    color: var(--paper);
+  }
+  .ticket.lunch .ticket-head { background: var(--moss); }
+  .ticket.dinner .ticket-head { background: var(--wine); }
+  .ticket-no { font-family: 'IBM Plex Mono', monospace; font-size: 10px; opacity: 0.85; }
+  .ticket-label { font-family: 'Fraunces', serif; font-weight: 600; font-size: 17px; flex: 1; }
+  .ticket-dot { width: 8px; height: 8px; border-radius: 50%; }
+  .ticket-dot.filled { background: var(--paper); }
+  .ticket-dot.empty { border: 1.5px solid var(--paper); opacity: 0.6; background: transparent; }
+  .perforation {
+    display: flex;
+    justify-content: space-between;
+    padding: 0 6px;
+    margin-top: -6px;
+  }
+  .perforation span {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    margin-top: -3px;
+  }
+  .ticket-options {
+    display: flex;
+    gap: 8px;
+    padding: 12px 14px 4px;
+  }
+  .opt-btn {
+    flex: 1;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    padding: 9px 6px;
+    border-radius: 4px;
+    border: 1.5px solid var(--line);
+    background: transparent;
+    color: var(--ink-soft);
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .opt-btn.eaten.active {
+    background: var(--moss);
+    border-color: var(--moss);
+    color: var(--paper);
+  }
+  .opt-btn.not-eaten.active {
+    background: var(--wine);
+    border-color: var(--wine);
+    color: var(--paper);
+  }
+  .opt-btn:hover:not(.active) { border-color: var(--ink); color: var(--ink); }
+  .ticket-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 14px 12px;
+    margin-top: auto;
+  }
+  .ticket-hint { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--ink-soft); }
+  .ticket-save {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.05em;
+    border: 1.5px solid var(--ink);
+    background: var(--ink);
+    color: var(--paper);
+    padding: 5px 12px;
+    border-radius: 3px;
+    cursor: pointer;
+  }
+  .ticket-save:disabled { opacity: 0.35; cursor: default; background: transparent; color: var(--ink); }
+  .history { margin-top: 34px; }
+  .history-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    color: var(--ink-soft);
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+  }
+  .history-list { border-top: 1px dashed var(--line); }
+  .history-row {
+    display: grid;
+    grid-template-columns: 76px 1fr 1fr;
+    gap: 10px;
+    align-items: start;
+    padding: 10px 4px;
+    border-bottom: 1px dashed var(--line);
+    cursor: pointer;
+    background: transparent;
+    border-left: none; border-right: none; border-top: none;
+    width: 100%;
+    text-align: left;
+    font-family: 'Inter', sans-serif;
+  }
+  .history-row:hover, .history-row.active { background: var(--paper-dim); }
+  .history-date { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--ink-soft); padding-top: 2px; }
+  .history-meal { font-size: 12px; color: var(--ink); }
+  .history-meal .meal-tag {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.08em;
+    color: var(--ink-soft);
+    display: block;
+    margin-bottom: 2px;
+  }
+  .history-meal.empty { color: #A79E86; font-style: italic; }
+  .empty-history { font-size: 12px; color: var(--ink-soft); padding: 14px 4px; text-align: center; font-style: italic; }
+  .install-note {
+    max-width: 560px;
+    margin: 0 auto 18px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10.5px;
+    color: var(--ink-soft);
+    text-align: center;
+    line-height: 1.5;
+  }
+  .stats-bar {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 22px;
+  }
+  .stat-card {
+    background: var(--paper-dim);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 12px 10px;
+    text-align: center;
+  }
+  .stat-num {
+    font-family: 'Fraunces', serif;
+    font-weight: 700;
+    font-size: 24px;
+    line-height: 1;
+    color: var(--ink);
+  }
+  .stat-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.08em;
+    color: var(--ink-soft);
+    margin-top: 5px;
+  }
+  .export-row {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 8px;
+  }
+  .export-btn {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11.5px;
+    letter-spacing: 0.06em;
+    border: 1.5px solid var(--ink);
+    background: var(--mustard);
+    color: var(--paper);
+    padding: 9px 18px;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: opacity 0.15s ease;
+  }
+  .export-btn:hover { opacity: 0.85; }
+  .export-btn:disabled { opacity: 0.4; cursor: default; }
+  .export-btn svg { width: 14px; height: 14px; flex-shrink: 0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="install-note">Your own private log — saved right in this browser on this device. On phone, use "Add to Home Screen" to open it like an app.</div>
+
+  <div class="stats-bar">
+    <div class="stat-card">
+      <div class="stat-num" id="statTotal">0</div>
+      <div class="stat-label">TOTAL MEALS LOGGED</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num" id="statLunch">0</div>
+      <div class="stat-label">LUNCHES</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num" id="statDinner">0</div>
+      <div class="stat-label">DINNERS</div>
+    </div>
+  </div>
+
+  <div class="export-row">
+    <button class="export-btn" id="exportPdfBtn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+      Export log as PDF
+    </button>
+  </div>
+
+  <div class="header">
+    <button class="nav-btn" id="prevBtn" aria-label="Previous day">‹</button>
+    <div class="date-block">
+      <div class="eyebrow" id="eyebrow"></div>
+      <div class="big-date" id="bigDate"></div>
+    </div>
+    <button class="nav-btn" id="nextBtn" aria-label="Next day">›</button>
+  </div>
+
+  <div class="jump-row">
+    <input type="date" class="jump-input" id="dateJump" />
+  </div>
+
+  <div class="tickets">
+    <div class="ticket lunch">
+      <div class="ticket-head">
+        <span class="ticket-no">No. 01</span>
+        <span class="ticket-label">Lunch</span>
+        <span class="ticket-dot empty" id="lunchDot"></span>
+      </div>
+      <div class="perforation">
+        <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+      </div>
+      <div class="ticket-options">
+        <button class="opt-btn eaten" id="lunchEatenBtn" data-meal="lunch" data-value="eaten">Eaten</button>
+        <button class="opt-btn not-eaten" id="lunchNotEatenBtn" data-meal="lunch" data-value="not_eaten">Not Eaten</button>
+      </div>
+      <div class="ticket-foot">
+        <span class="ticket-hint" id="lunchHint">Nothing logged yet</span>
+      </div>
+    </div>
+
+    <div class="ticket dinner">
+      <div class="ticket-head">
+        <span class="ticket-no">No. 02</span>
+        <span class="ticket-label">Dinner</span>
+        <span class="ticket-dot empty" id="dinnerDot"></span>
+      </div>
+      <div class="perforation">
+        <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+      </div>
+      <div class="ticket-options">
+        <button class="opt-btn eaten" id="dinnerEatenBtn" data-meal="dinner" data-value="eaten">Eaten</button>
+        <button class="opt-btn not-eaten" id="dinnerNotEatenBtn" data-meal="dinner" data-value="not_eaten">Not Eaten</button>
+      </div>
+      <div class="ticket-foot">
+        <span class="ticket-hint" id="dinnerHint">Nothing logged yet</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="history">
+    <div class="history-title">
+      <span>LOG</span>
+      <span id="historyCount">0 DAYS RECORDED</span>
+    </div>
+    <div class="history-list" id="historyList"></div>
+  </div>
+</div>
+
+<script>
+  const DOW = ["SUNDAY","MONDAY","TUESDAY","WEDNESDAY","THURSDAY","FRIDAY","SATURDAY"];
+  const MONTHS = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+  const STORAGE_PREFIX = "meallog:";
+  const INDEX_KEY = "meallog-index";
+  const STATUS_LABEL = { eaten: "Eaten", not_eaten: "Not Eaten" };
+
+  function toISO(d){
+    const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,"0"), day=String(d.getDate()).padStart(2,"0");
+    return `${y}-${m}-${day}`;
+  }
+  function fromISO(iso){
+    const [y,m,d]=iso.split("-").map(Number);
+    return new Date(y,m-1,d);
+  }
+  function addDays(iso,delta){
+    const d=fromISO(iso); d.setDate(d.getDate()+delta); return toISO(d);
+  }
+  function isToday(iso){ return iso===toISO(new Date()); }
+
+  function getDay(iso){
+    try { return JSON.parse(localStorage.getItem(STORAGE_PREFIX+iso)) || {lunch:"",dinner:""}; }
+    catch(e){ return {lunch:"",dinner:""}; }
+  }
+  function setDay(iso,data){
+    localStorage.setItem(STORAGE_PREFIX+iso, JSON.stringify(data));
+    updateIndex(iso);
+  }
+  function getIndex(){
+    try { return JSON.parse(localStorage.getItem(INDEX_KEY)) || []; }
+    catch(e){ return []; }
+  }
+  function updateIndex(iso){
+    const idx = getIndex();
+    if(!idx.includes(iso)){
+      idx.push(iso);
+      idx.sort((a,b)=> a<b?1:-1);
+      localStorage.setItem(INDEX_KEY, JSON.stringify(idx));
+    }
+  }
+
+  let selected = toISO(new Date());
+
+  const eyebrowEl = document.getElementById("eyebrow");
+  const bigDateEl = document.getElementById("bigDate");
+  const dateJumpEl = document.getElementById("dateJump");
+  const lunchHint = document.getElementById("lunchHint");
+  const dinnerHint = document.getElementById("dinnerHint");
+  const lunchDot = document.getElementById("lunchDot");
+  const dinnerDot = document.getElementById("dinnerDot");
+  const lunchEatenBtn = document.getElementById("lunchEatenBtn");
+  const lunchNotEatenBtn = document.getElementById("lunchNotEatenBtn");
+  const dinnerEatenBtn = document.getElementById("dinnerEatenBtn");
+  const dinnerNotEatenBtn = document.getElementById("dinnerNotEatenBtn");
+  const historyList = document.getElementById("historyList");
+  const historyCount = document.getElementById("historyCount");
+  const statTotal = document.getElementById("statTotal");
+  const statLunch = document.getElementById("statLunch");
+  const statDinner = document.getElementById("statDinner");
+  const exportPdfBtn = document.getElementById("exportPdfBtn");
+
+  function renderHeader(){
+    const d = fromISO(selected);
+    eyebrowEl.innerHTML = DOW[d.getDay()] + (isToday(selected) ? ' <span class="today-pill">TODAY</span>' : '');
+    bigDateEl.innerHTML = `${MONTHS[d.getMonth()]} ${d.getDate()}<span class="mon-year">${d.getFullYear()}</span>`;
+    dateJumpEl.value = selected;
+  }
+
+  function setStatus(meal, value){
+    const data = getDay(selected);
+    // toggle off if clicking the already-active option
+    data[meal] = data[meal] === value ? "" : value;
+    setDay(selected, data);
+    renderTickets();
+    renderHistory();
+    renderStats();
+  }
+
+  function renderTickets(){
+    const data = getDay(selected);
+
+    lunchEatenBtn.classList.toggle("active", data.lunch === "eaten");
+    lunchNotEatenBtn.classList.toggle("active", data.lunch === "not_eaten");
+    dinnerEatenBtn.classList.toggle("active", data.dinner === "eaten");
+    dinnerNotEatenBtn.classList.toggle("active", data.dinner === "not_eaten");
+
+    lunchHint.textContent = data.lunch ? STATUS_LABEL[data.lunch] + " — logged" : "Nothing logged yet";
+    dinnerHint.textContent = data.dinner ? STATUS_LABEL[data.dinner] + " — logged" : "Nothing logged yet";
+
+    lunchDot.className = "ticket-dot " + (data.lunch ? "filled" : "empty");
+    dinnerDot.className = "ticket-dot " + (data.dinner ? "filled" : "empty");
+  }
+
+  function renderStats(){
+    const idx = getIndex();
+    let lunchLogged = 0, dinnerLogged = 0;
+    idx.forEach(iso=>{
+      const data = getDay(iso);
+      if(data.lunch) lunchLogged++;
+      if(data.dinner) dinnerLogged++;
+    });
+    statTotal.textContent = lunchLogged + dinnerLogged;
+    statLunch.textContent = lunchLogged;
+    statDinner.textContent = dinnerLogged;
+    exportPdfBtn.disabled = idx.length === 0;
+  }
+
+  function renderHistory(){
+    const idx = getIndex();
+    historyCount.textContent = `${idx.length} ${idx.length===1?"DAY":"DAYS"} RECORDED`;
+    historyList.innerHTML = "";
+    if(idx.length===0){
+      const empty=document.createElement("div");
+      empty.className="empty-history";
+      empty.textContent="Nothing logged yet — mark a meal above to start your log.";
+      historyList.appendChild(empty);
+      return;
+    }
+    idx.forEach(iso=>{
+      const data=getDay(iso);
+      const d=fromISO(iso);
+      const row=document.createElement("button");
+      row.className="history-row"+(iso===selected?" active":"");
+      row.innerHTML = `
+        <span class="history-date">${MONTHS[d.getMonth()]} ${d.getDate()}<br>${DOW[d.getDay()].slice(0,3)}</span>
+        <span class="history-meal${data.lunch?"":" empty"}"><span class="meal-tag">LUNCH</span>${data.lunch?STATUS_LABEL[data.lunch]:"—"}</span>
+        <span class="history-meal${data.dinner?"":" empty"}"><span class="meal-tag">DINNER</span>${data.dinner?STATUS_LABEL[data.dinner]:"—"}</span>
+      `;
+      row.addEventListener("click", ()=>{ selected=iso; renderAll(); });
+      historyList.appendChild(row);
+    });
+  }
+
+  function renderAll(){
+    renderHeader();
+    renderTickets();
+    renderHistory();
+    renderStats();
+  }
+
+  document.getElementById("prevBtn").addEventListener("click", ()=>{ selected=addDays(selected,-1); renderAll(); });
+  document.getElementById("nextBtn").addEventListener("click", ()=>{ selected=addDays(selected,1); renderAll(); });
+  dateJumpEl.addEventListener("change", (e)=>{ if(e.target.value){ selected=e.target.value; renderAll(); } });
+
+  lunchEatenBtn.addEventListener("click", ()=> setStatus("lunch", "eaten"));
+  lunchNotEatenBtn.addEventListener("click", ()=> setStatus("lunch", "not_eaten"));
+  dinnerEatenBtn.addEventListener("click", ()=> setStatus("dinner", "eaten"));
+  dinnerNotEatenBtn.addEventListener("click", ()=> setStatus("dinner", "not_eaten"));
+
+  exportPdfBtn.addEventListener("click", exportPdf);
+
+  function exportPdf(){
+    const idx = getIndex();
+    if(idx.length===0) return;
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit: "pt", format: "a4" });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const marginX = 48;
+    let y = 56;
+
+    doc.setFont("times", "bold");
+    doc.setFontSize(22);
+    doc.text("Meal Log", marginX, y);
+    y += 20;
+    doc.setFont("courier", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(90, 95, 80);
+    doc.text(`Exported ${new Date().toDateString()}`, marginX, y);
+    y += 26;
+
+    let lunchLogged = 0, dinnerLogged = 0;
+    idx.forEach(iso=>{
+      const d = getDay(iso);
+      if(d.lunch) lunchLogged++;
+      if(d.dinner) dinnerLogged++;
+    });
+    doc.setFont("courier", "bold");
+    doc.setFontSize(10);
+    doc.setTextColor(38,43,31);
+    doc.text(`TOTAL MEALS LOGGED: ${lunchLogged+dinnerLogged}   |   LUNCHES: ${lunchLogged}   |   DINNERS: ${dinnerLogged}`, marginX, y);
+    y += 10;
+    doc.setDrawColor(217,205,174);
+    doc.line(marginX, y, pageWidth - marginX, y);
+    y += 26;
+
+    const colDateW = 130;
+    const colMealW = (pageWidth - marginX*2 - colDateW) / 2;
+
+    idx.forEach(iso=>{
+      const data = getDay(iso);
+      const d = fromISO(iso);
+      const dateLabel = `${MONTHS[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
+      const dowLabel = DOW[d.getDay()].slice(0,3);
+
+      const lunchText = data.lunch ? STATUS_LABEL[data.lunch] : "—";
+      const dinnerText = data.dinner ? STATUS_LABEL[data.dinner] : "—";
+      const rowHeight = 30;
+
+      if(y + rowHeight > doc.internal.pageSize.getHeight() - 50){
+        doc.addPage();
+        y = 56;
+      }
+
+      doc.setFont("courier", "bold");
+      doc.setFontSize(9);
+      doc.setTextColor(38,43,31);
+      doc.text(dateLabel, marginX, y);
+      doc.setFont("courier", "normal");
+      doc.setFontSize(7.5);
+      doc.setTextColor(91,99,80);
+      doc.text(dowLabel, marginX, y + 11);
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(7.5);
+      doc.setTextColor(75,93,58);
+      doc.text("LUNCH", marginX + colDateW, y - 9);
+      doc.setFont("helvetica", data.lunch === "eaten" ? "bold" : "normal");
+      doc.setFontSize(10);
+      doc.setTextColor(data.lunch === "eaten" ? 75 : data.lunch === "not_eaten" ? 107 : 38,
+                        data.lunch === "eaten" ? 93 : data.lunch === "not_eaten" ? 63 : 43,
+                        data.lunch === "eaten" ? 58 : data.lunch === "not_eaten" ? 69 : 31);
+      doc.text(lunchText, marginX + colDateW, y);
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(7.5);
+      doc.setTextColor(107,63,69);
+      doc.text("DINNER", marginX + colDateW + colMealW, y - 9);
+      doc.setFont("helvetica", data.dinner === "eaten" ? "bold" : "normal");
+      doc.setFontSize(10);
+      doc.setTextColor(data.dinner === "eaten" ? 75 : data.dinner === "not_eaten" ? 107 : 38,
+                        data.dinner === "eaten" ? 93 : data.dinner === "not_eaten" ? 63 : 43,
+                        data.dinner === "eaten" ? 58 : data.dinner === "not_eaten" ? 69 : 31);
+      doc.text(dinnerText, marginX + colDateW + colMealW, y);
+
+      y += rowHeight;
+      doc.setDrawColor(230,224,206);
+      doc.line(marginX, y - 8, pageWidth - marginX, y - 8);
+    });
+
+    doc.save(`meal-log-${toISO(new Date())}.pdf`);
+  }
+
+  renderAll();
+
+  if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) {
+    navigator.serviceWorker.register("sw.js").catch(()=>{});
+  }
+</script>
+</body>
+</html>
