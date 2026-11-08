@@ -316,10 +316,61 @@
   .reset-btn:hover { background: var(--wine); color: var(--paper); }
   .reset-btn:disabled { opacity: 0.4; cursor: default; background: transparent; color: var(--wine); }
   .reset-btn svg { width: 14px; height: 14px; flex-shrink: 0; }
+
+  .top-tabs { display:flex; gap:8px; max-width:560px; margin:0 auto 18px; }
+  .top-tab {
+    flex:1; font-family:'IBM Plex Mono',monospace; font-size:11.5px; letter-spacing:0.06em;
+    padding:10px 6px; border:1.5px solid var(--ink); background:transparent; color:var(--ink);
+    border-radius:4px; cursor:pointer;
+  }
+  .top-tab.active { background:var(--ink); color:var(--paper); }
+  .elec-card {
+    max-width:560px; margin:0 auto 16px; background:var(--paper);
+    border:1.5px solid var(--ink); border-radius:6px; padding:16px;
+    box-shadow:4px 4px 0 rgba(38,43,31,0.08);
+  }
+  .elec-card h3 { font-family:'Fraunces',serif; margin:0 0 6px; font-size:17px; }
+  .elec-card .hint { font-size:11.5px; color:var(--ink-soft); margin:0 0 12px; }
+  .elec-label {
+    display:block; font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.05em;
+    color:var(--ink-soft); margin-bottom:4px;
+  }
+  .elec-input {
+    width:100%; font-family:'Inter',sans-serif; font-size:15px; border:1.5px solid var(--line);
+    background:var(--paper-dim); color:var(--ink); padding:9px 10px; border-radius:5px;
+  }
+  .elec-row { display:flex; gap:10px; margin-bottom:12px; }
+  .elec-row > div { flex:1; }
+  .elec-block { margin-bottom:12px; }
+  .elec-result { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:6px 0 14px; }
+  .elec-box { background:var(--paper-dim); border:1px solid var(--line); border-radius:6px; padding:12px 10px; text-align:center; }
+  .elec-box.hl { background:var(--mustard); border-color:var(--mustard); }
+  .elec-box.hl .elec-num, .elec-box.hl .elec-lbl { color:var(--paper); }
+  .elec-num { font-family:'Fraunces',serif; font-weight:700; font-size:24px; line-height:1; }
+  .elec-lbl { font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.08em; color:var(--ink-soft); margin-top:5px; }
+  .elec-period { font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--ink-soft); text-align:center; margin:2px 0 4px; min-height:14px; }
+  .elec-error { color:var(--wine); font-family:'IBM Plex Mono',monospace; font-size:11px; min-height:16px; margin-bottom:8px; }
+  .elec-actions { display:flex; gap:8px; flex-wrap:wrap; }
+  .elec-btn {
+    font-family:'IBM Plex Mono',monospace; font-size:11.5px; letter-spacing:0.05em; padding:9px 16px;
+    border-radius:4px; border:1.5px solid var(--ink); background:var(--mustard); color:var(--paper); cursor:pointer;
+  }
+  .elec-btn.alt { background:transparent; color:var(--ink); }
+  .elec-btn.danger { background:transparent; color:var(--wine); border-color:var(--wine); }
+  .elec-btn.small { padding:5px 9px; font-size:10px; }
+  .elec-item { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:10px 0; border-bottom:1px dashed var(--line); flex-wrap:wrap; }
+  .elec-item .ei-title { font-weight:600; font-size:13.5px; }
+  .elec-item .ei-meta { font-size:11px; color:var(--ink-soft); }
+  .elec-empty { text-align:center; color:var(--ink-soft); font-style:italic; font-size:12.5px; padding:12px; }
 </style>
 </head>
 <body>
 <div class="wrap">
+  <div class="top-tabs">
+    <button class="top-tab active" id="tabMeals">🍽 MEALS</button>
+    <button class="top-tab" id="tabElec">⚡ ELECTRICITY</button>
+  </div>
+  <div id="meals-view">
   <div class="install-note">Your own private log — saved right in this browser on this device. On phone, use "Add to Home Screen" to open it like an app.</div>
 
   <div class="stats-bar">
@@ -407,6 +458,53 @@
       <span id="historyCount">0 DAYS RECORDED</span>
     </div>
     <div class="history-list" id="historyList"></div>
+  </div>
+  </div><!-- /meals-view -->
+
+  <div id="electric-view" style="display:none;">
+    <div class="elec-card">
+      <h3>⚡ Electricity bill</h3>
+      <p class="hint">Billing dates can be any day. Enter the date and meter reading of the previous bill, and of this one. Bill = units used × rate per unit.</p>
+      <div class="elec-row">
+        <div>
+          <label class="elec-label">FROM DATE (last reading)</label>
+          <input type="date" class="elec-input" id="elFrom" />
+        </div>
+        <div>
+          <label class="elec-label">TO DATE (this reading)</label>
+          <input type="date" class="elec-input" id="elTo" />
+        </div>
+      </div>
+      <div class="elec-row">
+        <div>
+          <label class="elec-label">START READING</label>
+          <input type="number" class="elec-input" id="elStart" min="0" step="0.01" inputmode="decimal" placeholder="e.g. 1200" />
+        </div>
+        <div>
+          <label class="elec-label">END READING</label>
+          <input type="number" class="elec-input" id="elEnd" min="0" step="0.01" inputmode="decimal" placeholder="e.g. 1350" />
+        </div>
+      </div>
+      <div class="elec-block">
+        <label class="elec-label">₹ PER UNIT</label>
+        <input type="number" class="elec-input" id="elRate" min="0" step="0.01" inputmode="decimal" />
+      </div>
+      <div class="elec-period" id="elPeriod"></div>
+      <div class="elec-result">
+        <div class="elec-box"><div class="elec-num" id="elUnits">0</div><div class="elec-lbl">UNITS USED</div></div>
+        <div class="elec-box hl"><div class="elec-num" id="elBill">₹0</div><div class="elec-lbl">ELECTRICITY BILL</div></div>
+      </div>
+      <div class="elec-error" id="elError"></div>
+      <div class="elec-actions">
+        <button class="elec-btn" id="elSaveBtn">Save this month</button>
+        <button class="elec-btn alt" id="elClearBtn">Clear</button>
+      </div>
+    </div>
+
+    <div class="elec-card">
+      <h3>Saved bills</h3>
+      <div id="elList"><div class="elec-empty">No readings saved yet.</div></div>
+    </div>
   </div>
 </div>
 
@@ -656,6 +754,225 @@
     });
 
     doc.save(`meal-log-${toISO(new Date())}.pdf`);
+  }
+
+  // ================= ELECTRICITY (date-based billing periods) =================
+  const ELEC_KEY = "elec-bills";
+  const ELEC_RATE_KEY = "elec-rate";
+  const DEFAULT_ELEC_RATE = 6;
+
+  const mealsView = document.getElementById("meals-view");
+  const electricView = document.getElementById("electric-view");
+  const tabMeals = document.getElementById("tabMeals");
+  const tabElec = document.getElementById("tabElec");
+  const elFrom = document.getElementById("elFrom");
+  const elTo = document.getElementById("elTo");
+  const elStart = document.getElementById("elStart");
+  const elEnd = document.getElementById("elEnd");
+  const elRate = document.getElementById("elRate");
+  const elUnits = document.getElementById("elUnits");
+  const elBill = document.getElementById("elBill");
+  const elError = document.getElementById("elError");
+  const elPeriod = document.getElementById("elPeriod");
+  const elList = document.getElementById("elList");
+  const elSaveBtn = document.getElementById("elSaveBtn");
+  let editingId = null;
+  let elInitialized = false;
+
+  function getElecBills(){
+    let arr;
+    try{ arr = JSON.parse(localStorage.getItem(ELEC_KEY)) || []; }catch(e){ arr = []; }
+    // migrate older month-based entries (e.g. "2026-10") to date ranges
+    return arr.map(b=>{
+      if(b.fromDate && b.toDate) return b;
+      const [y,m] = (b.month || "").split("-").map(Number);
+      const last = new Date(y, m, 0).getDate();
+      return Object.assign({}, b, {
+        id: b.id || ("m"+b.month),
+        fromDate: b.month + "-01",
+        toDate: b.month + "-" + String(last).padStart(2,"0")
+      });
+    });
+  }
+  function saveElecBills(a){ localStorage.setItem(ELEC_KEY, JSON.stringify(a)); }
+  function getElecRate(){ const v = parseFloat(localStorage.getItem(ELEC_RATE_KEY)); return isNaN(v) ? DEFAULT_ELEC_RATE : v; }
+  function fmt(n){ return Number.isInteger(n) ? String(n) : n.toFixed(2); }
+  function prettyD(iso){
+    const d = fromISO(iso);
+    return d.getDate() + " " + MONTHS[d.getMonth()] + " " + d.getFullYear();
+  }
+  function daysBetween(a,b){ return Math.round((fromISO(b) - fromISO(a)) / 86400000); }
+  function latestBill(){
+    const bills = getElecBills().slice().sort((x,y)=> x.toDate < y.toDate ? 1 : -1);
+    return bills[0] || null;
+  }
+
+  function showTab(which){
+    const isMeals = which === "meals";
+    mealsView.style.display = isMeals ? "block" : "none";
+    electricView.style.display = isMeals ? "none" : "block";
+    tabMeals.classList.toggle("active", isMeals);
+    tabElec.classList.toggle("active", !isMeals);
+    if(!isMeals){
+      if(!elInitialized){ newElecForm(); elInitialized = true; }
+      renderElecList();
+    }
+  }
+  tabMeals.addEventListener("click", ()=> showTab("meals"));
+  tabElec.addEventListener("click", ()=> showTab("elec"));
+
+  // fresh form: continues from the previous bill's end date + reading
+  function newElecForm(){
+    editingId = null;
+    const last = latestBill();
+    elFrom.value = last ? last.toDate : "";
+    elStart.value = last ? last.end : "";
+    elTo.value = toISO(new Date());
+    elEnd.value = "";
+    elRate.value = getElecRate();
+    elSaveBtn.textContent = "Save this bill";
+    calcElec();
+  }
+
+  function calcElec(){
+    const s = parseFloat(elStart.value);
+    const e = parseFloat(elEnd.value);
+    const r = parseFloat(elRate.value);
+    elError.style.color = "";
+    elError.textContent = "";
+    elPeriod.textContent = "";
+    elUnits.textContent = "0"; elBill.textContent = "₹0";
+
+    if(elFrom.value && elTo.value){
+      const days = daysBetween(elFrom.value, elTo.value);
+      if(days < 0){ elError.textContent = "The 'to' date can't be before the 'from' date."; return null; }
+      elPeriod.textContent = prettyD(elFrom.value) + "  →  " + prettyD(elTo.value) + "  (" + days + " day" + (days===1?"":"s") + ")";
+    }
+    if(isNaN(s) || isNaN(e) || isNaN(r)) return null;
+    if(e < s){ elError.textContent = "End reading can't be less than the start reading."; return null; }
+    const units = Math.round((e - s) * 100) / 100;
+    const bill = Math.round(units * r * 100) / 100;
+    elUnits.textContent = fmt(units);
+    elBill.textContent = "₹" + fmt(bill);
+    return { units, bill, start: s, end: e, rate: r };
+  }
+
+  [elFrom, elTo, elStart, elEnd, elRate].forEach(el => el.addEventListener("input", calcElec));
+
+  document.getElementById("elClearBtn").addEventListener("click", newElecForm);
+
+  elSaveBtn.addEventListener("click", ()=>{
+    if(!elFrom.value || !elTo.value){ elError.textContent = "Pick both the from date and the to date."; return; }
+    const r = calcElec();
+    if(!r){
+      if(!elError.textContent) elError.textContent = "Enter start reading, end reading and rate.";
+      return;
+    }
+    let bills = getElecBills();
+    const entry = {
+      id: editingId || ("b" + Date.now() + Math.random().toString(36).slice(2,7)),
+      fromDate: elFrom.value, toDate: elTo.value,
+      start: r.start, end: r.end, rate: r.rate, units: r.units, bill: r.bill
+    };
+    bills = bills.filter(b => b.id !== entry.id);
+    bills.push(entry);
+    bills.sort((a,b)=> a.toDate < b.toDate ? 1 : -1);
+    saveElecBills(bills);
+    localStorage.setItem(ELEC_RATE_KEY, String(r.rate));
+    renderElecList();
+    const savedMsg = "✓ Saved " + prettyD(entry.fromDate) + " → " + prettyD(entry.toDate);
+    newElecForm();
+    elError.style.color = "var(--moss)";
+    elError.textContent = savedMsg;
+    setTimeout(()=>{ if(elError.textContent === savedMsg){ elError.textContent = ""; elError.style.color = ""; } }, 2500);
+  });
+
+  function renderElecList(){
+    const bills = getElecBills().slice().sort((a,b)=> a.toDate < b.toDate ? 1 : -1);
+    elList.innerHTML = "";
+    if(bills.length === 0){
+      elList.innerHTML = '<div class="elec-empty">No bills saved yet.</div>';
+      return;
+    }
+    let totalBill = 0;
+    bills.forEach(b => { totalBill += b.bill; });
+    bills.forEach(b=>{
+      const days = daysBetween(b.fromDate, b.toDate);
+      const row = document.createElement("div");
+      row.className = "elec-item";
+      row.innerHTML = `
+        <div>
+          <div class="ei-title">${prettyD(b.fromDate)} → ${prettyD(b.toDate)} — ₹${fmt(b.bill)}</div>
+          <div class="ei-meta">${days} days · ${fmt(b.start)} → ${fmt(b.end)} · ${fmt(b.units)} units × ₹${fmt(b.rate)}</div>
+        </div>
+        <div class="elec-actions">
+          <button class="elec-btn alt small" data-open="${b.id}">Edit</button>
+          <button class="elec-btn small" data-pdf="${b.id}">PDF</button>
+          <button class="elec-btn danger small" data-del="${b.id}">Del</button>
+        </div>`;
+      elList.appendChild(row);
+    });
+    const tot = document.createElement("div");
+    tot.className = "elec-item";
+    tot.style.borderBottom = "none";
+    tot.innerHTML = `<div class="ei-title">Total of all saved bills</div><div class="ei-title">₹${fmt(Math.round(totalBill*100)/100)}</div>`;
+    elList.appendChild(tot);
+
+    elList.querySelectorAll("[data-open]").forEach(btn=>btn.addEventListener("click", ()=>{
+      const b = getElecBills().find(x => x.id === btn.dataset.open);
+      if(!b) return;
+      editingId = b.id;
+      elFrom.value = b.fromDate; elTo.value = b.toDate;
+      elStart.value = b.start; elEnd.value = b.end; elRate.value = b.rate;
+      elSaveBtn.textContent = "Update this bill";
+      calcElec();
+      window.scrollTo({top:0,behavior:"smooth"});
+    }));
+    elList.querySelectorAll("[data-pdf]").forEach(btn=>btn.addEventListener("click", ()=> exportElecPdf(btn.dataset.pdf)));
+    elList.querySelectorAll("[data-del]").forEach(btn=>btn.addEventListener("click", ()=>{
+      const b = getElecBills().find(x => x.id === btn.dataset.del);
+      if(!b) return;
+      if(!confirm("Delete the bill for " + prettyD(b.fromDate) + " → " + prettyD(b.toDate) + "?")) return;
+      saveElecBills(getElecBills().filter(x => x.id !== b.id));
+      if(editingId === b.id) newElecForm();
+      renderElecList();
+    }));
+  }
+
+  function exportElecPdf(id){
+    const b = getElecBills().find(x => x.id === id);
+    if(!b) return;
+    const days = daysBetween(b.fromDate, b.toDate);
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit: "pt", format: "a4" });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const marginX = 48;
+    let y = 56;
+    doc.setFont("times","bold"); doc.setFontSize(22);
+    doc.text("Electricity Bill", marginX, y);
+    y += 20;
+    doc.setFont("courier","normal"); doc.setFontSize(9); doc.setTextColor(90,95,80);
+    doc.text(prettyD(b.fromDate) + " to " + prettyD(b.toDate) + " (" + days + " days)  |  Generated " + new Date().toDateString(), marginX, y);
+    y += 14; doc.setDrawColor(217,205,174); doc.line(marginX, y, pageWidth-marginX, y);
+    y += 34; doc.setTextColor(38,43,31);
+
+    const rows = [
+      ["Meter reading on " + prettyD(b.fromDate), fmt(b.start)],
+      ["Meter reading on " + prettyD(b.toDate), fmt(b.end)],
+      ["Units used", fmt(b.units)],
+      ["Rate per unit", "Rs." + fmt(b.rate)]
+    ];
+    doc.setFont("helvetica","normal"); doc.setFontSize(11);
+    rows.forEach(r=>{
+      doc.text(r[0], marginX, y);
+      doc.text(r[1], marginX + 330, y);
+      y += 24;
+    });
+    y += 4; doc.setDrawColor(38,43,31); doc.line(marginX, y, pageWidth-marginX, y); y += 28;
+    doc.setFont("helvetica","bold"); doc.setFontSize(14);
+    doc.text("TOTAL ELECTRICITY BILL", marginX, y);
+    doc.text("Rs." + fmt(b.bill), marginX + 330, y);
+    doc.save("electricity-bill-" + b.fromDate + "-to-" + b.toDate + ".pdf");
   }
 
   renderAll();
